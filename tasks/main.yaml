@@ -76,6 +76,13 @@
   become: true
   when: default_nginx_vhost.stat.exists
 
+- name: "Enable and start nginx service"
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: yes
+  become: true
+
 - name: "Check if acme.sh is already installed"
   ansible.builtin.stat:
     path: "/root/.acme.sh"
