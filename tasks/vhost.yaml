@@ -1,16 +1,16 @@
 ---
-- name: "Check if vhost for {{ vhost.domain }} exists"
+- name: "Check if vhost exists for {{ vhost.domain }}"
   ansible.builtin.stat:
     path: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
   register: nginx_vhost
 
-- name: "Check if private key for {{ vhost.domain }} exist"
+- name: "Check if private key exists for {{ vhost.domain }}"
   ansible.builtin.stat:
     path: "/root/.acme.sh/{{ vhost.domain }}_ecc/{{ vhost.domain }}.key"
   register: nginx_vhost_certificates_key
   become: true
 
-- name: "Check if fullchain certificate for {{ vhost.domain }} exist"
+- name: "Check if fullchain certificate exists for {{ vhost.domain }}"
   ansible.builtin.stat:
     path: "/root/.acme.sh/{{ vhost.domain }}_ecc/fullchain.cer"
   register: nginx_vhost_certificates_cer

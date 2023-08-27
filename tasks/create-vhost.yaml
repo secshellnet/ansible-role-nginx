@@ -8,12 +8,12 @@
   become: true
 
 - name: "Set splitted domain as fact next tasks"
-  ansible.builtin.set_fact: |
-    splitted="{{ new_vhost.domain.split('.') }}"
+  ansible.builtin.set_fact:
+    splitted: "{{ new_vhost.domain.split('.') }}"
 
 - name: "Set dns zone as fact for credential selection"
-  ansible.builtin.set_fact: |
-    zone="{{ splitted[-2] }}.{{ splitted[-1] }}"
+  ansible.builtin.set_fact:
+    zone: "{{ splitted[-2] }}.{{ splitted[-1] }}"
 
 - name: "Issue certificate for {{ new_vhost.domain }}"
   # the usage of shell is required to pass environment variables

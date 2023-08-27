@@ -12,20 +12,6 @@
   ansible.builtin.command: "sh -c 'curl https://get.acme.sh | sh -s email={{ nginx_cert_email }}'"
   become: true
 
-#- name: "Remove acme.sh from root's .bashrc"
-#  lineinfile:
-#    path: /root/.bashrc
-#    line: '. "/root/.acme.sh/acme.sh.env"'
-#    state: absent
-#  become: true
-
-#- name: Link acme.sh to /usr/bin
-#  ansible.builtin.file:
-#    src: /root/.acme.sh/acme.sh
-#    dest: /usr/bin/acme.sh
-#    state: link
-#  become: true
-
 - name: Create crontab for acme.sh
   ansible.builtin.cron:
     name: "acmesh"
