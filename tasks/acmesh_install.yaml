@@ -3,6 +3,7 @@
   ansible.builtin.package:
     name:
       - curl
+      - tar
       - "{{ (ansible_pkg_mgr == 'apt') | ternary('cron', 'cronie') }}"
     state: present
   become: true
