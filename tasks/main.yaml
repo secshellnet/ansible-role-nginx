@@ -104,22 +104,17 @@
 
 - name: "Transform existing and defined vhosts into compareable format"
   ansible.builtin.set_fact:
-    _defined_vhosts: "{{ nginx_vhosts | map(attribute='domain') | list }}"
+    defined_vhosts: "{{ nginx_vhosts | map(attribute='domain') | list }}"
     existing_vhosts: "{{ existing_vhosts_obj.files | map(attribute='path') | map('basename') | list }}"
 
 - name: "Extend list of existing vhosts by .conf extension on rhel based systems"
   ansible.builtin.set_fact:
-    defined_vhosts: "{{ _defined_vhosts | map('regex_replace', '(.*)$', '\\1.conf') | list }}"
+    defined_vhosts_with_conf: "{{ defined_vhosts | map('regex_replace', '$', '.conf') | list }}"
   when: ansible_distribution not in ['Ubuntu', 'Debian']
-
-- name: "Simple use generated list on debian based systems"
-  ansible.builtin.set_fact:
-    defined_vhosts: "{{ _defined_vhosts }}"
-  when: ansible_distribution in ['Ubuntu', 'Debian']
 
 - name: "Disable nginx vhosts which are no longer present in the ansible inventory"
   ansible.builtin.file:
-    path: "/etc/nginx/sites-enabled/{{ item }}"
+    path: "/etc/nginx/sites-available/{{ item }}"
     state: absent
   when: "ansible_distribution in ['Ubuntu', 'Debian']"
   loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
@@ -128,9 +123,18 @@
 
 - name: "Delete nginx vhosts which are no longer present in the ansible inventory"
   ansible.builtin.file:
-    path: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
+    path: "/etc/nginx/sites-available/{{ item }}"
     state: absent
+  when: "ansible_distribution in ['Ubuntu', 'Debian']"
   loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
+  become: yes
+
+- name: "Delete nginx vhosts which are no longer present in the ansible inventory"
+  ansible.builtin.file:
+    path: "/etc/nginx/conf.d/{{ item }}"
+    state: absent
+  when: "ansible_distribution not in ['Ubuntu', 'Debian']"
+  loop: "{{ existing_vhosts | difference(defined_vhosts_with_conf) }}"
   become: yes
 
 - name: "Delete certificates of nginx vhosts which are no longer present in the ansible inventory"
