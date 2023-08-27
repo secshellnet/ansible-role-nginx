@@ -1,0 +1,5 @@
+---
+nginx_vhosts: []
+nginx_cf_token: {}
+nginx_cf_zone_id: {}
+nginx_cf_account_id: {}
