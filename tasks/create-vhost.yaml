@@ -20,8 +20,6 @@
   ansible.builtin.shell: "/root/.acme.sh/acme.sh --issue --keylength ec-384 --dns dns_cf -d {{ new_vhost.domain }}"
   environment:
     CF_Token: "{{ nginx_cf_token[zone] }}"
-    #CF_Account_ID: "{{ nginx_cf_account_id[zone] }}"
-    #CF_Zone_ID: "{{ nginx_cf_zone_id[zone] }}"
   when: not nginx_vhost_certificates_cer.stat.exists or
         not nginx_vhost_certificates_key.stat.exists
   become: true
