@@ -31,4 +31,5 @@ nginx_vhosts:
     ipv6_addr: 2001:4b80:7545:d1ca::2  # defaults to ::
     ipv6_prefix: 64  # defaults to 128
     interface: eth0  # defaults to first ethernet interface
+    adjust_cf_dns: true  # defaults to false - won't touch dns
 ```

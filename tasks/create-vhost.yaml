@@ -32,4 +32,7 @@
     value: "{{ new_vhost.ipv6_addr }}"
     proxied: false
     api_token: "{{ nginx_cf_token[zone] }}"
-  when: "new_vhost.ipv6_addr != '::'"
+  when: 
+    - "new_vhost.ipv6_addr != '::'"
+    - "'adjust_cf_dns' in new_vhost"
+    - "new_vhost.adjust_cf_dns"
