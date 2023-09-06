@@ -32,4 +32,8 @@ nginx_vhosts:
     ipv6_prefix: 64  # defaults to 128
     interface: eth0  # defaults to first ethernet interface
     adjust_cf_dns: true  # defaults to false - won't touch dns
+    additional_locations:
+      - path: '/static/'
+        raw_lines:
+          - "alias /opt/netbox/netbox/static/;"
 ```
