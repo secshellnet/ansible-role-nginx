@@ -42,14 +42,14 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
+{% if 'additional_locations' in new_vhost %}
+{% for location in new_vhost.additional_locations %}
 
-    {% if additional_locations in new_vhost %}
-    {% for location in new_vhost.additional_locations %}
     location {{ location.path }} {
         {% for line in location.raw_lines %}
         {{ line }}
         {% endfor %}
     }
-    {% endfor %}
-    {% endif %}
+{% endfor %}
+{% endif %}
 }
