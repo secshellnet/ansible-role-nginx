@@ -1,9 +1,6 @@
 ---
-- name: Install nginx
-  ansible.builtin.package:
-    name: nginx
-    state: present
-  become: true
+- name: "Install acme.sh"
+  ansible.builtin.include_tasks: install-nginx.yaml
   when:
     - "not install_only_acme"
 
@@ -28,71 +25,6 @@
 #       with_items:
 #         - [v4, v6]
 
-- name: "Create netbox service for http"
-  netbox.netbox.netbox_service:
-    netbox_url: "{{ netbox_url }}"
-    netbox_token: "{{ netbox_token }}"
-    data:
-      virtual_machine: "{{ inventory_hostname }}"
-      name: http
-      port: 80
-      protocol: TCP
-    state: present
-  delegate_to: localhost
-  when:
-    - netbox_url
-    - netbox_token
-    - "not install_only_acme"
-
-- name: "Create netbox service for https"
-  netbox.netbox.netbox_service:
-    netbox_url: "{{ netbox_url }}"
-    netbox_token: "{{ netbox_token }}"
-    data:
-      virtual_machine: "{{ inventory_hostname }}"
-      name: https
-      port: 443
-      protocol: TCP
-    state: present
-  delegate_to: localhost
-  when:
-    - netbox_url
-    - netbox_token
-    - "not install_only_acme"
-
-- name: "Check if default vhost is enabled"
-  ansible.builtin.stat:
-    path: "/etc/nginx/sites-enabled/default"
-  register: default_nginx_vhost
-
-- name: "Disable default nginx vhost"
-  ansible.builtin.file:
-    path: "/etc/nginx/sites-enabled/default"
-    state: absent
-  become: true
-  when: 
-    - "not install_only_acme"
-    - default_nginx_vhost.stat.exists
-  notify: "Reload nginx"
-
-- name: "Delete default nginx vhost"
-  ansible.builtin.file:
-    path: "/etc/nginx/sites-available/default"
-    state: absent
-  become: true
-  when: 
-    - "not install_only_acme"
-    - default_nginx_vhost.stat.exists
-
-- name: "Enable and start nginx service"
-  ansible.builtin.systemd:
-    name: nginx
-    state: started
-    enabled: true
-  become: true
-  when: 
-    - "not install_only_acme"
-
 - name: "Check if acme.sh is already installed"
   ansible.builtin.stat:
     path: "/root/.acme.sh"
@@ -100,77 +32,26 @@
   become: true
 
 - name: "Install acme.sh"
-  ansible.builtin.include_tasks: acmesh_install.yaml
+  ansible.builtin.include_tasks: install-acmesh.yaml
   when:
     - nginx_cert_email is defined
     - not acmesh_installed.stat.exists
 
-- name: "Get a list of all existing vhosts"
-  ansible.builtin.find:
-    paths: /etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/', 'conf.d/') }}
-    file_type: any
-    recurse: false
-  register: existing_vhosts_obj
-  when: 
-    - "not install_only_acme"
-
-- name: "Transform existing and defined vhosts into compareable format"
-  ansible.builtin.set_fact:
-    defined_vhosts: "{{ nginx_vhosts | map(attribute='domain') | list }}"
-    existing_vhosts: "{{ existing_vhosts_obj.files | map(attribute='path') | map('basename') | list }}"
-  when: 
-    - "not install_only_acme"
-
-- name: "Extend list of existing vhosts by .conf extension on rhel based systems"
-  ansible.builtin.set_fact:
-    defined_vhosts_with_conf: "{{ defined_vhosts | map('regex_replace', '$', '.conf') | list }}"
+- name: "Handle absent vhosts"
+  ansible.builtin.include_tasks: handle-absent.yaml
   when:
     - "not install_only_acme"
-    - ansible_distribution not in ['Ubuntu', 'Debian']
 
-- name: "Disable nginx vhosts which are no longer present in the ansible inventory"
-  ansible.builtin.file:
-    path: "/etc/nginx/sites-available/{{ item }}"
-    state: absent
-  when:
-    - "not install_only_acme"
-    - "ansible_distribution in ['Ubuntu', 'Debian']"
-  loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
-  become: true
-  notify: "Reload nginx"
-
-- name: "Delete nginx vhosts which are no longer present in the ansible inventory"
-  ansible.builtin.file:
-    path: "/etc/nginx/sites-available/{{ item }}"
-    state: absent
-  when:
-    - "not install_only_acme"
-    - "ansible_distribution in ['Ubuntu', 'Debian']"
-  loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
-  become: true
-
-- name: "Delete nginx vhosts which are no longer present in the ansible inventory"
-  ansible.builtin.file:
-    path: "/etc/nginx/conf.d/{{ item }}"
-    state: absent
-  when: 
-  when:
-    - "not install_only_acme"
-    - "ansible_distribution not in ['Ubuntu', 'Debian']"
-  loop: "{{ existing_vhosts | difference(defined_vhosts_with_conf) }}"
-  become: true
-
-- name: "Delete certificates of nginx vhosts which are no longer present in the ansible inventory"
-  ansible.builtin.file:
-    path: "/root/.acme.sh/{{ item }}_ecc/"
-    state: absent
-  loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
-  become: true
-  when:
-    - "not install_only_acme"
+- name: "Issue certificates"
+  ansible.builtin.include_tasks: issue-certificates.yaml
+    loop: "{{ nginx_vhosts | default([]) }}"
+  vars:
+    vhost: "{{ item }}"
 
 - name: "Create vhosts"
-  ansible.builtin.include_tasks: vhost.yaml
+  ansible.builtin.include_tasks: create-vhosts.yaml
   loop: "{{ nginx_vhosts | default([]) }}"
   vars:
     vhost: "{{ item }}"
+  when: 
+    - "not install_only_acme"

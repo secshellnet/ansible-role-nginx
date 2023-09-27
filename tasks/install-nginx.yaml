@@ -1,0 +1,65 @@
+---
+- name: Install nginx
+  ansible.builtin.package:
+    name: nginx
+    state: present
+  become: true
+
+- name: "Adjust NetBox documentation: Create http service"
+  netbox.netbox.netbox_service:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      virtual_machine: "{{ inventory_hostname }}"
+      name: http
+      port: 80
+      protocol: TCP
+    state: present
+  delegate_to: localhost
+  when:
+    - netbox_url
+    - netbox_token
+
+- name: "Adjust NetBox documentation: Create https service"
+  netbox.netbox.netbox_service:
+    netbox_url: "{{ netbox_url }}"
+    netbox_token: "{{ netbox_token }}"
+    data:
+      virtual_machine: "{{ inventory_hostname }}"
+      name: https
+      port: 443
+      protocol: TCP
+    state: present
+  delegate_to: localhost
+  when:
+    - netbox_url
+    - netbox_token
+
+- name: "Check if default vhost is enabled"
+  ansible.builtin.stat:
+    path: "/etc/nginx/sites-enabled/default"
+  register: default_nginx_vhost
+
+- name: "Disable default nginx vhost"
+  ansible.builtin.file:
+    path: "/etc/nginx/sites-enabled/default"
+    state: absent
+  become: true
+  when: 
+    - default_nginx_vhost.stat.exists
+  notify: "Reload nginx"
+
+- name: "Delete default nginx vhost"
+  ansible.builtin.file:
+    path: "/etc/nginx/sites-available/default"
+    state: absent
+  become: true
+  when: 
+    - default_nginx_vhost.stat.exists
+
+- name: "Enable and start nginx service"
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true
+  become: true

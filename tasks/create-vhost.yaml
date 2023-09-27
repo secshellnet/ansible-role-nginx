@@ -5,27 +5,7 @@
     dest: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
     mode: "0644"
   when:
-    - "not install_only_acme"
     - "not nginx_vhost.stat.exists"
-  become: true
-
-- name: "Set splitted domain as fact next tasks"
-  ansible.builtin.set_fact:
-    splitted: "{{ new_vhost.domain.split('.') }}"
-  when:
-    - "not install_only_acme"
-
-- name: "Set dns zone as fact for credential selection"
-  ansible.builtin.set_fact:
-    zone: "{{ splitted[-2] }}.{{ splitted[-1] }}"
-
-- name: "Issue certificate for {{ new_vhost.domain }}"
-  # the usage of shell is required to pass environment variables
-  ansible.builtin.shell: "/root/.acme.sh/acme.sh --issue --keylength ec-384 --dns dns_cf -d {{ new_vhost.domain }}"
-  environment:
-    CF_Token: "{{ nginx_cf_token[zone] }}"
-  when: not nginx_vhost_certificates_cer.stat.exists or
-        not nginx_vhost_certificates_key.stat.exists
   become: true
 
 - name: "Configure DNS"
@@ -40,4 +20,3 @@
     - "new_vhost.ipv6_addr != '::'"
     - "'adjust_cf_dns' in new_vhost"
     - "new_vhost.adjust_cf_dns"
-    - "not install_only_acme"

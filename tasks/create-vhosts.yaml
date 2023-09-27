@@ -3,39 +3,20 @@
   ansible.builtin.stat:
     path: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
   register: nginx_vhost
-  when:
-    - "not install_only_acme"
-
-- name: "Check if private key exists for {{ vhost.domain }}"
-  ansible.builtin.stat:
-    path: "/root/.acme.sh/{{ vhost.domain }}_ecc/{{ vhost.domain }}.key"
-  register: nginx_vhost_certificates_key
-  become: true
-
-- name: "Check if fullchain certificate exists for {{ vhost.domain }}"
-  ansible.builtin.stat:
-    path: "/root/.acme.sh/{{ vhost.domain }}_ecc/fullchain.cer"
-  register: nginx_vhost_certificates_cer
-  become: true
 
 - name: "Make sure ipv6_addr exists"
   ansible.builtin.set_fact:
-    new_vhost: "{{ vhost | combine({'ipv6_addr': '::'}) }}"
-  when: 
-    - "vhost.ipv6_addr is not defined"
+    new_vhost: "{{ {'ipv6_addr': '::'} | combine(vhost) }}"
 
 - name: "Add the ipv6 address {{ vhost.ipv6_addr }} for {{ vhost.domain }}"
   ansible.builtin.include_tasks: add_ipv6_address.yaml
   when:
-    - "not install_only_acme"
     - "new_vhost.ipv6_addr != '::'"
     - "new_vhost.ipv6_addr not in ansible_facts['all_ipv6_addresses']"
 
 - name: "Create vhost {{ new_vhost.domain }}"
   ansible.builtin.include_tasks: create-vhost.yaml
-  when: not nginx_vhost.stat.exists or
-        not nginx_vhost_certificates_cer.stat.exists or
-        not nginx_vhost_certificates_key.stat.exists
+  when: not nginx_vhost.stat.exists
 
 - name: "Enable nginx vhost {{ new_vhost.domain }}"
   ansible.builtin.file:
@@ -44,13 +25,9 @@
     state: link
   when: "ansible_distribution in ['Ubuntu', 'Debian']"
   become: true
-  when: 
-    - "not install_only_acme"
 
 - name: "Test nginx configuration"
   ansible.builtin.command: nginx -t
   become: true
   notify: "Reload nginx"
   changed_when: false
-  when: 
-    - "not install_only_acme"
