@@ -4,6 +4,8 @@
     name: nginx
     state: present
   become: true
+  when:
+    - "not install_only_acme"
 
 # - name: "Adjust firewall rules for nginx"
 #   block:
@@ -40,6 +42,7 @@
   when:
     - netbox_url
     - netbox_token
+    - "not install_only_acme"
 
 - name: "Create netbox service for https"
   netbox.netbox.netbox_service:
@@ -55,6 +58,7 @@
   when:
     - netbox_url
     - netbox_token
+    - "not install_only_acme"
 
 - name: "Check if default vhost is enabled"
   ansible.builtin.stat:
@@ -66,7 +70,9 @@
     path: "/etc/nginx/sites-enabled/default"
     state: absent
   become: true
-  when: default_nginx_vhost.stat.exists
+  when: 
+    - "not install_only_acme"
+    - default_nginx_vhost.stat.exists
   notify: "Reload nginx"
 
 - name: "Delete default nginx vhost"
@@ -74,7 +80,9 @@
     path: "/etc/nginx/sites-available/default"
     state: absent
   become: true
-  when: default_nginx_vhost.stat.exists
+  when: 
+    - "not install_only_acme"
+    - default_nginx_vhost.stat.exists
 
 - name: "Enable and start nginx service"
   ansible.builtin.systemd:
@@ -82,6 +90,8 @@
     state: started
     enabled: true
   become: true
+  when: 
+    - "not install_only_acme"
 
 - name: "Check if acme.sh is already installed"
   ansible.builtin.stat:
@@ -101,22 +111,30 @@
     file_type: any
     recurse: false
   register: existing_vhosts_obj
+  when: 
+    - "not install_only_acme"
 
 - name: "Transform existing and defined vhosts into compareable format"
   ansible.builtin.set_fact:
     defined_vhosts: "{{ nginx_vhosts | map(attribute='domain') | list }}"
     existing_vhosts: "{{ existing_vhosts_obj.files | map(attribute='path') | map('basename') | list }}"
+  when: 
+    - "not install_only_acme"
 
 - name: "Extend list of existing vhosts by .conf extension on rhel based systems"
   ansible.builtin.set_fact:
     defined_vhosts_with_conf: "{{ defined_vhosts | map('regex_replace', '$', '.conf') | list }}"
-  when: ansible_distribution not in ['Ubuntu', 'Debian']
+  when:
+    - "not install_only_acme"
+    - ansible_distribution not in ['Ubuntu', 'Debian']
 
 - name: "Disable nginx vhosts which are no longer present in the ansible inventory"
   ansible.builtin.file:
     path: "/etc/nginx/sites-available/{{ item }}"
     state: absent
-  when: "ansible_distribution in ['Ubuntu', 'Debian']"
+  when:
+    - "not install_only_acme"
+    - "ansible_distribution in ['Ubuntu', 'Debian']"
   loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
   become: true
   notify: "Reload nginx"
@@ -125,7 +143,9 @@
   ansible.builtin.file:
     path: "/etc/nginx/sites-available/{{ item }}"
     state: absent
-  when: "ansible_distribution in ['Ubuntu', 'Debian']"
+  when:
+    - "not install_only_acme"
+    - "ansible_distribution in ['Ubuntu', 'Debian']"
   loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
   become: true
 
@@ -133,7 +153,10 @@
   ansible.builtin.file:
     path: "/etc/nginx/conf.d/{{ item }}"
     state: absent
-  when: "ansible_distribution not in ['Ubuntu', 'Debian']"
+  when: 
+  when:
+    - "not install_only_acme"
+    - "ansible_distribution not in ['Ubuntu', 'Debian']"
   loop: "{{ existing_vhosts | difference(defined_vhosts_with_conf) }}"
   become: true
 
@@ -143,6 +166,8 @@
     state: absent
   loop: "{{ existing_vhosts | difference(defined_vhosts) }}"
   become: true
+  when:
+    - "not install_only_acme"
 
 - name: "Create vhosts"
   ansible.builtin.include_tasks: vhost.yaml

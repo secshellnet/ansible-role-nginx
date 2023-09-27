@@ -3,6 +3,8 @@
   ansible.builtin.stat:
     path: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
   register: nginx_vhost
+  when:
+    - "not install_only_acme"
 
 - name: "Check if private key exists for {{ vhost.domain }}"
   ansible.builtin.stat:
@@ -19,13 +21,16 @@
 - name: "Make sure ipv6_addr exists"
   ansible.builtin.set_fact:
     new_vhost: "{{ vhost | combine({'ipv6_addr': '::'}) }}"
-  when: "vhost.ipv6_addr is not defined"
+  when: 
+    - "vhost.ipv6_addr is not defined"
+    - "not install_only_acme"
 
 - name: "Add the ipv6 address {{ vhost.ipv6_addr }} for {{ vhost.domain }}"
   ansible.builtin.include_tasks: add_ipv6_address.yaml
   when:
     - "new_vhost.ipv6_addr != '::'"
     - "new_vhost.ipv6_addr not in ansible_facts['all_ipv6_addresses']"
+    - "not install_only_acme"
 
 - name: "Create vhost {{ new_vhost.domain }}"
   ansible.builtin.include_tasks: create-vhost.yaml
@@ -40,9 +45,13 @@
     state: link
   when: "ansible_distribution in ['Ubuntu', 'Debian']"
   become: true
+  when: 
+    - "not install_only_acme"
 
 - name: "Test nginx configuration"
   ansible.builtin.command: nginx -t
   become: true
   notify: "Reload nginx"
   changed_when: false
+  when: 
+    - "not install_only_acme"

@@ -4,12 +4,16 @@
     src: "vhost.conf.j2"
     dest: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
     mode: "0644"
-  when: not nginx_vhost.stat.exists
+  when:
+    - "not install_only_acme"
+    - "not nginx_vhost.stat.exists"
   become: true
 
 - name: "Set splitted domain as fact next tasks"
   ansible.builtin.set_fact:
     splitted: "{{ new_vhost.domain.split('.') }}"
+  when:
+    - "not install_only_acme"
 
 - name: "Set dns zone as fact for credential selection"
   ansible.builtin.set_fact:
@@ -36,3 +40,4 @@
     - "new_vhost.ipv6_addr != '::'"
     - "'adjust_cf_dns' in new_vhost"
     - "new_vhost.adjust_cf_dns"
+    - "not install_only_acme"
