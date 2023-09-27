@@ -44,7 +44,7 @@
 
 - name: "Issue certificates"
   ansible.builtin.include_tasks: issue-certificates.yaml
-    loop: "{{ nginx_vhosts | default([]) }}"
+  loop: "{{ nginx_vhosts | default([]) }}"
   vars:
     vhost: "{{ item }}"
 
