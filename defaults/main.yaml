@@ -1,4 +1,4 @@
 ---
 nginx_vhosts: []
 nginx_cf_token: {}
-install_only_acme: false
+nginx_only_acme: false

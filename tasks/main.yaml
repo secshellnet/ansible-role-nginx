@@ -2,7 +2,7 @@
 - name: "Install nginx"
   ansible.builtin.include_tasks: install-nginx.yaml
   when:
-    - "not install_only_acme"
+    - "not nginx_only_acme"
 
 # - name: "Adjust firewall rules for nginx"
 #   block:
@@ -40,7 +40,7 @@
 - name: "Handle absent vhosts"
   ansible.builtin.include_tasks: handle-absent.yaml
   when:
-    - "not install_only_acme"
+    - "not nginx_only_acme"
 
 - name: "Issue certificates"
   ansible.builtin.include_tasks: issue-certificates.yaml
@@ -54,4 +54,4 @@
   vars:
     vhost: "{{ item }}"
   when: 
-    - "not install_only_acme"
+    - "not nginx_only_acme"
