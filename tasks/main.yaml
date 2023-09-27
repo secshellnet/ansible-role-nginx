@@ -1,5 +1,5 @@
 ---
-- name: "Install acme.sh"
+- name: "Install nginx"
   ansible.builtin.include_tasks: install-nginx.yaml
   when:
     - "not install_only_acme"
