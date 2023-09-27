@@ -23,14 +23,13 @@
     new_vhost: "{{ vhost | combine({'ipv6_addr': '::'}) }}"
   when: 
     - "vhost.ipv6_addr is not defined"
-    - "not install_only_acme"
 
 - name: "Add the ipv6 address {{ vhost.ipv6_addr }} for {{ vhost.domain }}"
   ansible.builtin.include_tasks: add_ipv6_address.yaml
   when:
+    - "not install_only_acme"
     - "new_vhost.ipv6_addr != '::'"
     - "new_vhost.ipv6_addr not in ansible_facts['all_ipv6_addresses']"
-    - "not install_only_acme"
 
 - name: "Create vhost {{ new_vhost.domain }}"
   ansible.builtin.include_tasks: create-vhost.yaml
