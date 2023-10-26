@@ -4,6 +4,8 @@
     src: "vhost.conf.j2"
     dest: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
     mode: "0644"
+  notify:
+    - "Reload nginx"
   when:
     - "not nginx_vhost.stat.exists"
   become: true

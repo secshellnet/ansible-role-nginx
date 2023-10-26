@@ -4,6 +4,8 @@
     name: nginx
     state: present
   become: true
+  notify:
+    - "Restart nginx"
 
 - name: "Adjust NetBox documentation: Create http service"
   netbox.netbox.netbox_service:
@@ -17,8 +19,10 @@
     state: present
   delegate_to: localhost
   when:
-    - netbox_url
-    - netbox_token
+    - "netbox_url is defined"
+    - "netbox_token is defined"
+    - "netbox_url is not none"
+    - "netbox_token is not none"
 
 - name: "Adjust NetBox documentation: Create https service"
   netbox.netbox.netbox_service:
@@ -32,8 +36,10 @@
     state: present
   delegate_to: localhost
   when:
-    - netbox_url
-    - netbox_token
+    - "netbox_url is defined"
+    - "netbox_token is defined"
+    - "netbox_url is not none"
+    - "netbox_token is not none"
 
 - name: "Check if default vhost is enabled"
   ansible.builtin.stat:
