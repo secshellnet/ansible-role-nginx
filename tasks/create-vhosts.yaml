@@ -23,7 +23,7 @@
 
     - name: "Extract Nginx user"
       ansible.builtin.set_fact:
-        nginx_user: "{{ nginx_conf_content.content | b64decode | regex_search('^user (.+);', '\\1') }}"
+        nginx_user: "{{ nginx_conf_content.content | b64decode | regex_search('^user (.+);', '\\1') | first }}"
 
 - name: "Create nginx vhost for {{ new_vhost.domain }}"
   ansible.builtin.template:
