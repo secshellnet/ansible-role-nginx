@@ -38,9 +38,9 @@ nginx_vhosts:
           - "alias /opt/netbox/netbox/static/;"
     acls:
       - action: allow
-        value: ::/0
-      - action: allow
         value: 0.0.0.0/0
+      - action: deny
+        value: ::/0
     auth_basic:
       title: "SECURITY"
       credentials:

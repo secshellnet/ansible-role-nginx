@@ -45,8 +45,8 @@ server {
     auth_basic "{{ new_vhost.auth_basic.title }}";
     auth_basic_user_file /etc/nginx/.htpasswd/{{ new_vhost.domain }};
 {% endif %}
+{% if 'proxy_pass' in new_vhost and proxy_pass is not none %}
 
-{% if 'proxy_pass' in new_vhost %}
     location / {
         proxy_pass {{ new_vhost.proxy_pass }};
         proxy_http_version 1.1;
@@ -57,20 +57,20 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
-
 {% if 'client_max_body_size' in new_vhost %}
+
         client_max_body_size {{ new_vhost.client_max_body_size }};
 {% endif %}
     }
 {% endif %}
 {% if 'additional_locations' in new_vhost %}
 {% for location in new_vhost.additional_locations %}
-
     location {{ location.path }} {
 {% for line in location.raw_lines %}
         {{ line }}
 {% endfor %}
     }
+
 {% endfor %}
 {% endif %}
 }
