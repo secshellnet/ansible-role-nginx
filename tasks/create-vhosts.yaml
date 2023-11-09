@@ -45,7 +45,9 @@
 
 - name: "Ensure passlib is installed"
   ansible.builtin.package:
-    name: python3-passlib
+    name: 
+      - python3-passlib
+      - python3-netaddr
   become: true
 
 - name: "Add a user to a password file and ensure permissions are set"
@@ -56,6 +58,7 @@
     owner: "{{ nginx_user }}"
     group: "{{ nginx_user }}"
     mode: "0640"
+  no_log: true
   loop: "{{ new_vhost.auth_basic.data }}"
   loop_control:
     loop_var: creds

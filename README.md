@@ -31,9 +31,19 @@ nginx_vhosts:
     ipv6_addr: 2001:4b80:7545:d1ca::2  # defaults to ::
     ipv6_prefix: 64  # defaults to 128
     interface: eth0  # defaults to first ethernet interface
-    adjust_cf_dns: true  # defaults to false - won't touch dns
+    client_max_body_size: 200M
     additional_locations:
       - path: '/static/'
         raw_lines:
           - "alias /opt/netbox/netbox/static/;"
+    acls:
+      - action: allow
+        value: ::/0
+      - action: allow
+        value: 0.0.0.0/0
+    auth_basic:
+      title: "SECURITY"
+      data:
+        - username: admin
+          password: nimda
 ```

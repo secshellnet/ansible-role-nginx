@@ -34,7 +34,7 @@ server {
 
     # ACL
 {% for acl in new_vhost.acls %}
-{% if 'action' in acl and 'value' in acl and acl.action in ['deny', 'allow'] %}
+{% if 'action' in acl and 'value' in acl and acl.action in ['deny', 'allow'] and (acl.value | ansible.utils.ipaddr) %}
     {{ acl.action }} {{ acl.value }};
 {% endif %}
 {% endfor %}
