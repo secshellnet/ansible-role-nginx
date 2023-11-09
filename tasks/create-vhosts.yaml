@@ -43,6 +43,16 @@
     - "new_vhost.auth_basic is not none"
   become: true
 
+- name: "Ensure pip is installed"
+  ansible.builtin.package:
+    name: python3-pip
+  become: true
+
+- name: "Ensure passlib is installed"
+  ansible.builtin.pip:
+    name: passlib
+  become: true
+
 - name: "Add a user to a password file and ensure permissions are set"
   community.general.htpasswd:
     path: "/etc/nginx/.htpasswd/{{ new_vhost.domain }}"
