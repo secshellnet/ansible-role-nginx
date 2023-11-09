@@ -30,16 +30,18 @@ server {
     # OCSP stapling
     ssl_stapling on;
     ssl_stapling_verify on;
-
 {% if 'acls' in new_vhost %}
-{% for acl in acls %}
-{% if 'action' in acl and 'value' in acl %}
+
+    # ACL
+{% for acl in new_vhost.acls %}
+{% if 'action' in acl and 'value' in acl and acl.action in ['deny', 'allow'] %}
     {{ acl.action }} {{ acl.value }};
 {% endif %}
 {% endfor %}
 {% endif %}
-
 {% if 'auth_basic' in new_vhost %}
+
+    # Basic Auth
     auth_basic "{{ new_vhost.auth_basic.title }}";
     auth_basic_user_file /etc/nginx/.htpasswd/{{ new_vhost.domain }};
 {% endif %}
