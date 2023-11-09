@@ -67,6 +67,13 @@
     - "new_vhost.auth_basic is not none"
   become: true
 
+- name: "Delete htpasswd file for {{ new_vhost.domain }}"
+  ansible.builtin.file:
+    path: "/etc/nginx/.htpasswd/{{ new_vhost.domain }}"
+    state: absent
+  when:
+    - "new_vhost.auth_basic is not defined or new_vhost.auth_basic is none"
+
 - name: "Enable nginx vhost {{ new_vhost.domain }}"
   ansible.builtin.file:
     src: "/etc/nginx/sites-available/{{ new_vhost.domain }}"
