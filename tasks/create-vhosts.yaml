@@ -14,9 +14,57 @@
     - "new_vhost.ipv6_addr != '::'"
     - "new_vhost.ipv6_addr not in ansible_facts['all_ipv6_addresses']"
 
-- name: "Create vhost {{ new_vhost.domain }}"
-  ansible.builtin.include_tasks: create-vhost.yaml
-  when: not nginx_vhost.stat.exists
+- name: "Determine nginx user"
+  block:
+    - name: "Read nginx.conf"
+      ansible.builtin.slurp:
+        path: /etc/nginx/nginx.conf
+      register: nginx_conf_content
+
+    - name: "Extract Nginx user"
+      ansible.builtin.set_fact:
+        nginx_user: "{{ nginx_conf_content.content | b64decode | regex_search('^user (.+);', '\\1') }}"
+
+- name: "Create nginx vhost for {{ new_vhost.domain }}"
+  ansible.builtin.template:
+    src: "vhost.conf.j2"
+    dest: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
+    mode: "0644"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+  notify:
+    - "Reload nginx"
+  when:
+    - "not nginx_vhost.stat.exists"
+  become: true
+
+- name: "Ensure /etc/nginx/.htpasswd/ directory exists"
+  ansible.builtin.file:
+    path: "/etc/nginx/.htpasswd/"
+    state: directory
+    mode: "0750"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+  when:
+    - "not nginx_vhost.stat.exists"
+    - "new_vhost.auth_basic is defined"
+    - "new_vhost.auth_basic is not none"
+  become: true
+
+- name: "Add a user to a password file and ensure permissions are set"
+  community.general.htpasswd:
+    path: "/etc/nginx/.htpasswd/{{ new_vhost.domain }}"
+    name: "{{ item.username }}"
+    password: "{{ item.password }}"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+    mode: "0640"
+  loop: "{{ new_vhost.auth_basic.data }}"
+  when:
+    - "not nginx_vhost.stat.exists"
+    - "new_vhost.auth_basic is defined"
+    - "new_vhost.auth_basic is not none"
+  become: true
 
 - name: "Enable nginx vhost {{ new_vhost.domain }}"
   ansible.builtin.file:
@@ -29,5 +77,6 @@
 - name: "Test nginx configuration"
   ansible.builtin.command: nginx -t
   become: true
-  notify: "Reload nginx"
+  notify: 
+    - "Reload nginx"
   changed_when: false

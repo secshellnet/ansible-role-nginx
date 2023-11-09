@@ -1,57 +1,35 @@
 ---
 - name: "Install nginx"
   ansible.builtin.include_tasks: install-nginx.yaml
+
+- name: "Hide nginx version in http banner by setting server_tokens directive to off in nginx configuration"
   when:
-    - "not nginx_only_acme"
-
-# - name: "Adjust firewall rules for nginx"
-#   block:
-#     - name: "Iptables: Allow http and https"
-#       ansible.builtin.iptables:
-#         chain: INPUT
-#         protocol: tcp
-#         destination_ports: ["80", "443"]
-#         jump: ACCEPT
-#         ip_version: "{{ item }}"
-#       become: true
-#       with_items: [ipv4, ipv6]
-
-#     - name: "Iptables: Save current state in /etc/iptables/"
-#       community.general.iptables_state:
-#         ip_version: "ip{{ item }}"
-#         state: saved
-#         path: "/etc/iptables/rules.{{ item }}"
-#       become: true
-#       with_items:
-#         - [v4, v6]
-
-- name: "Check if acme.sh is already installed"
-  ansible.builtin.stat:
-    path: "/root/.acme.sh"
-  register: acmesh_installed
+    - "nginx_hide_server_tokens"
+  ansible.builtin.lineinfile:
+    path: "/etc/nginx/nginx.conf"
+    regexp: '^(\s*)# server_tokens off;'
+    line: '\1server_tokens off;'
+    backrefs: true  # enables \1
+  notify: "Reload nginx"
   become: true
 
-- name: "Install acme.sh"
-  ansible.builtin.include_tasks: install-acmesh.yaml
+- name: "Iptables: Allow http and https"
   when:
-    - nginx_cert_email is defined
-    - not acmesh_installed.stat.exists
+    - "nginx_iptables"
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_ports: [80, 443]
+    jump: ACCEPT
+    ip_version: "{{ item }}"
+  become: true
+  with_items: [ipv4, ipv6]
 
 - name: "Handle absent vhosts"
   ansible.builtin.include_tasks: handle-absent.yaml
-  when:
-    - "not nginx_only_acme"
-
-- name: "Issue certificates"
-  ansible.builtin.include_tasks: issue-certificates.yaml
-  loop: "{{ nginx_vhosts | default([]) }}"
-  vars:
-    vhost: "{{ item }}"
 
 - name: "Create vhosts"
   ansible.builtin.include_tasks: create-vhosts.yaml
   loop: "{{ nginx_vhosts | default([]) }}"
   vars:
     vhost: "{{ item }}"
-  when: 
-    - "not nginx_only_acme"

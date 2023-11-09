@@ -31,6 +31,19 @@ server {
     ssl_stapling on;
     ssl_stapling_verify on;
 
+{% if 'acls' in new_vhost %}
+{% for acl in acls %}
+{% if 'action' in acl and 'value' in acl %}
+    {{ acl.action }} {{ acl.value }};
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if 'auth_basic' in new_vhost %}
+    auth_basic "{{ new_vhost.auth_basic.title }}";
+    auth_basic_user_file /etc/nginx/.htpasswd/{{ new_vhost.domain }};
+{% endif %}
+
     location / {
         proxy_pass {{ new_vhost.proxy_pass }};
         proxy_http_version 1.1;
@@ -41,6 +54,10 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+
+{% if 'client_max_body_size' in new_vhost %}
+        client_max_body_size {{ new_vhost.client_max_body_size }};
+{% endif %}
     }
 {% if 'additional_locations' in new_vhost %}
 {% for location in new_vhost.additional_locations %}

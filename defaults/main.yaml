@@ -1,4 +1,5 @@
 ---
 nginx_vhosts: []
-nginx_cf_token: {}
-nginx_only_acme: false
+
+nginx_hide_server_tokens: true  # hide nginx version in banner
+nginx_iptables: false  # configure iptables firewall (only temporarily, must be saved afterwards)
