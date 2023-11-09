@@ -1,10 +1,5 @@
 ---
-- name: "Check if vhost exists for {{ vhost.domain }}"
-  ansible.builtin.stat:
-    path: "/etc/nginx/{{ (ansible_distribution in ['Ubuntu', 'Debian']) | ternary('sites-available/' + vhost.domain, 'conf.d/' + vhost.domain + '.conf') }}"
-  register: nginx_vhost
-
-- name: "Make sure ipv6_addr exists"
+- name: "Make sure ipv6_addr exists in vhost"
   ansible.builtin.set_fact:
     new_vhost: "{{ {'ipv6_addr': '::'} | combine(vhost) }}"
 
@@ -34,8 +29,6 @@
     group: "{{ nginx_user }}"
   notify:
     - "Reload nginx"
-  when:
-    - "not nginx_vhost.stat.exists"
   become: true
 
 - name: "Ensure /etc/nginx/.htpasswd/ directory exists"
@@ -46,7 +39,6 @@
     owner: "{{ nginx_user }}"
     group: "{{ nginx_user }}"
   when:
-    - "not nginx_vhost.stat.exists"
     - "new_vhost.auth_basic is defined"
     - "new_vhost.auth_basic is not none"
   become: true
@@ -61,7 +53,6 @@
     mode: "0640"
   loop: "{{ new_vhost.auth_basic.data }}"
   when:
-    - "not nginx_vhost.stat.exists"
     - "new_vhost.auth_basic is defined"
     - "new_vhost.auth_basic is not none"
   become: true
