@@ -43,7 +43,7 @@ nginx_vhosts:
         value: 0.0.0.0/0
     auth_basic:
       title: "SECURITY"
-      data:
+      credentials:
         - username: admin
           password: nimda
 ```
