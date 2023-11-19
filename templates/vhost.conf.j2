@@ -46,7 +46,7 @@ server {
     auth_basic_user_file /etc/nginx/.htpasswd/{{ new_vhost.domain }};
 {% endif %}
 {% if 'proxy_pass' in new_vhost and new_vhost.proxy_pass is not none %}
-{% if proxy_pass_location in new_vhost and new_vhost.proxy_pass_location is not none %}
+{% if 'proxy_pass_location' in new_vhost and new_vhost.proxy_pass_location is not none %}
     location {{ new_vhost.proxy_pass_location }} {
 {% else %}
     location / {
