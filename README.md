@@ -28,6 +28,7 @@ nginx_vhosts:
 
   - domain: service-two.example.com
     proxy_pass: 'http://[::1]:8081/'
+    proxy_pass_location: "~* ^(\\/_matrix|\\/_synapse\\/client)"  # e.g. for synapse matrix server
     ipv6_addr: 2001:4b80:7545:d1ca::2  # defaults to ::
     ipv6_prefix: 64  # defaults to 128
     interface: eth0  # defaults to first ethernet interface
